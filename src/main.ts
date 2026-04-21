@@ -3,6 +3,10 @@ import { setupCamera } from './camera'
 import { createTracker, trackFace } from './tracker'
 import { ParallaxScene } from './scene'
 import { createFallbackTextures } from './textures'
+import { ImageParallaxMode } from './modes/image-parallax-mode'
+import { WebcamParallaxMode } from './modes/webcam-parallax-mode'
+
+type ModeName = 'image' | 'webcam'
 
 async function bootstrap() {
   const app = document.querySelector<HTMLDivElement>('#app')
@@ -17,14 +21,24 @@ async function bootstrap() {
   const ui = document.createElement('div')
   ui.className = 'ui-layer'
 
+  const controls = document.createElement('div')
+  controls.className = 'controls'
+
   const status = document.createElement('p')
   status.textContent = 'Initializing...'
+
+  const modeButton = document.createElement('button')
+  modeButton.textContent = 'Switch mode'
+
+  const modeLabel = document.createElement('p')
+  modeLabel.textContent = 'Mode: image'
 
   const debug = document.createElement('pre')
   debug.textContent = 'Waiting for tracker...'
 
+  controls.append(modeButton)
+  ui.append(status, controls, modeLabel, debug)
   app.append(canvasContainer, ui)
-  ui.append(status, debug)
 
   try {
     const video = await setupCamera()
@@ -33,8 +47,30 @@ async function bootstrap() {
 
     await createTracker()
 
+    const scene = new ParallaxScene(canvasContainer)
     const textures = createFallbackTextures()
-    const scene = new ParallaxScene(canvasContainer, textures)
+
+    let currentMode: ModeName = 'image'
+
+    const imageMode = new ImageParallaxMode(textures)
+    const webcamMode = new WebcamParallaxMode(video)
+
+    function applyMode(mode: ModeName) {
+      currentMode = mode
+      modeLabel.textContent = `Mode: ${mode}`
+
+      if (mode === 'image') {
+        scene.setMode(imageMode)
+      } else {
+        scene.setMode(webcamMode)
+      }
+    }
+
+    modeButton.addEventListener('click', () => {
+      applyMode(currentMode === 'image' ? 'webcam' : 'image')
+    })
+
+    applyMode(currentMode)
 
     function loop() {
       const face = trackFace(video, performance.now())
@@ -44,6 +80,7 @@ async function bootstrap() {
 
       debug.textContent = JSON.stringify(
         {
+          mode: currentMode,
           detected: face.detected,
           x: Number(face.x.toFixed(2)),
           y: Number(face.y.toFixed(2)),

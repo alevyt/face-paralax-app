@@ -1,18 +1,12 @@
 import * as THREE from 'three'
 import type { FaceState } from './types'
-
-type LayerConfig = {
-  texture: THREE.Texture
-  width: number
-  height: number
-  z: number
-  transparent?: boolean
-}
+import type { ParallaxMode } from './modes/types'
 
 export class ParallaxScene {
   private scene: THREE.Scene
   private camera: THREE.PerspectiveCamera
   private renderer: THREE.WebGLRenderer
+  private activeMode: ParallaxMode | null = null
 
   private targetX = 0
   private targetY = 0
@@ -22,7 +16,7 @@ export class ParallaxScene {
   private currentY = 0
   private currentZ = 5
 
-  constructor(container: HTMLElement, textures: THREE.Texture[]) {
+  constructor(container: HTMLElement) {
     this.scene = new THREE.Scene()
 
     this.camera = new THREE.PerspectiveCamera(
@@ -39,55 +33,19 @@ export class ParallaxScene {
 
     container.appendChild(this.renderer.domElement)
 
-    this.createLights()
-    this.createLayers(textures)
+    const ambient = new THREE.AmbientLight(0xffffff, 1)
+    this.scene.add(ambient)
 
     window.addEventListener('resize', this.onResize)
   }
 
-  private createLights() {
-    const ambient = new THREE.AmbientLight(0xffffff, 1)
-    this.scene.add(ambient)
-  }
-
-  private createLayers(textures: THREE.Texture[]) {
-    const [backgroundTexture, middleTexture, foregroundTexture] = textures
-
-    const layers: LayerConfig[] = [
-      {
-        texture: backgroundTexture,
-        width: 14,
-        height: 8,
-        z: -4
-      },
-      {
-        texture: middleTexture,
-        width: 10,
-        height: 6,
-        z: -1,
-        transparent: true
-      },
-      {
-        texture: foregroundTexture,
-        width: 8,
-        height: 5,
-        z: 2,
-        transparent: true
-      }
-    ]
-
-    for (const layer of layers) {
-      const mesh = new THREE.Mesh(
-        new THREE.PlaneGeometry(layer.width, layer.height),
-        new THREE.MeshBasicMaterial({
-          map: layer.texture,
-          transparent: layer.transparent ?? false
-        })
-      )
-
-      mesh.position.z = layer.z
-      this.scene.add(mesh)
+  setMode(mode: ParallaxMode) {
+    if (this.activeMode) {
+      this.activeMode.dispose(this.scene)
     }
+
+    this.activeMode = mode
+    this.activeMode.init(this.scene)
   }
 
   update(face: FaceState) {
@@ -111,6 +69,8 @@ export class ParallaxScene {
     this.camera.position.y = -this.currentY
     this.camera.position.z = this.currentZ
     this.camera.lookAt(0, 0, 0)
+
+    this.activeMode?.update(face)
   }
 
   render() {
