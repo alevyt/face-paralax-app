@@ -16,6 +16,18 @@ body {
   box-sizing: border-box;
 }
 
-h1, p {
+h1,
+p,
+pre {
   margin: 0;
+}
+
+pre {
+  background: #1e1e1e;
+  padding: 16px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+  overflow: auto;
 }
