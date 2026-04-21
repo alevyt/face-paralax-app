@@ -1,6 +1,7 @@
 import './style.css'
 import { setupCamera } from './camera'
 import { createTracker, trackFace } from './tracker'
+import { ParallaxScene } from './scene'
 
 async function bootstrap() {
   const app = document.querySelector<HTMLDivElement>('#app')
@@ -9,38 +10,41 @@ async function bootstrap() {
     throw new Error('App root not found')
   }
 
-  const title = document.createElement('h1')
-  title.textContent = 'Face Parallax App'
+  const canvasContainer = document.createElement('div')
+  canvasContainer.className = 'canvas-container'
+
+  const ui = document.createElement('div')
+  ui.className = 'ui-layer'
 
   const status = document.createElement('p')
-  status.textContent = 'Requesting camera access...'
+  status.textContent = 'Initializing...'
 
   const debug = document.createElement('pre')
-  debug.textContent = 'Initializing...'
+  debug.textContent = 'Waiting for tracker...'
 
-  app.append(title, status, debug)
+  app.append(canvasContainer, ui)
+  ui.append(status, debug)
 
   try {
     const video = await setupCamera()
-    video.style.width = '100%'
-    video.style.maxWidth = '480px'
-    video.style.borderRadius = '12px'
+    video.className = 'camera-preview'
+    ui.append(video)
 
-    status.textContent = 'Camera is active'
-    app.append(video)
-
-    status.textContent = 'Initializing face tracker...'
     await createTracker()
-    status.textContent = 'Face tracker is active'
+
+    const scene = new ParallaxScene(canvasContainer)
 
     function loop() {
       const face = trackFace(video, performance.now())
 
+      scene.update(face)
+      scene.render()
+
       debug.textContent = JSON.stringify(
         {
           detected: face.detected,
-          x: Number(face.x.toFixed(3)),
-          y: Number(face.y.toFixed(3)),
+          x: Number(face.x.toFixed(2)),
+          y: Number(face.y.toFixed(2)),
           z: Number(face.z.toFixed(3))
         },
         null,
@@ -50,9 +54,10 @@ async function bootstrap() {
       requestAnimationFrame(loop)
     }
 
+    status.textContent = 'Running'
     loop()
   } catch (error) {
-    status.textContent = 'Failed to initialize app'
+    status.textContent = 'Failed to initialize'
     console.error(error)
   }
 }
