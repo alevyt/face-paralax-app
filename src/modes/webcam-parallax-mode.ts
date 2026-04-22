@@ -66,26 +66,29 @@ export class WebcamParallaxMode implements ParallaxMode {
   }
 
   dispose(scene: THREE.Scene) {
-    for (const mesh of this.meshes) {
-      scene.remove(mesh)
-      mesh.geometry.dispose()
+  for (const mesh of this.meshes) {
+    scene.remove(mesh)
+    mesh.geometry.dispose()
 
-      const material = mesh.material
-      if (material instanceof THREE.Material) {
-        if ('map' in material && material.map) {
-          material.map.dispose()
-        }
-        material.dispose()
+    const material = mesh.material
+
+    if (material instanceof THREE.Material) {
+      const map = (material as THREE.MeshBasicMaterial).map
+      if (map) {
+        map.dispose()
       }
-    }
 
-    if (this.videoTexture) {
-      this.videoTexture.dispose()
-      this.videoTexture = null
+      material.dispose()
     }
-
-    this.meshes = []
   }
+
+  if (this.videoTexture) {
+    this.videoTexture.dispose()
+    this.videoTexture = null
+  }
+
+  this.meshes = []
+}
 
   private createOverlayTexture(): THREE.CanvasTexture {
     const canvas = document.createElement('canvas')
