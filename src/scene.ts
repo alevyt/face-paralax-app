@@ -50,8 +50,21 @@ export class ParallaxScene {
 
   update(face: FaceState) {
     if (face.detected) {
-      this.targetX = face.x * 1.1;
-      this.targetY = face.y * 0.7;
+      const rawX = face.x;
+      const rawY = face.y;
+
+      // dead zone (remove jitter near center)
+      const deadZone = 0.03;
+      const x = Math.abs(rawX) < deadZone ? 0 : rawX;
+      const y = Math.abs(rawY) < deadZone ? 0 : rawY;
+
+      // clamp movement range
+      const clampedX = THREE.MathUtils.clamp(x, -0.6, 0.6);
+      const clampedY = THREE.MathUtils.clamp(y, -0.4, 0.4);
+
+      // apply sensitivity
+      this.targetX = clampedX * 1.2;
+      this.targetY = clampedY * 0.8;
 
       const normalizedDepth = THREE.MathUtils.clamp(
         (face.z - 0.18) * 8,
@@ -72,6 +85,8 @@ export class ParallaxScene {
     this.camera.position.x = this.currentX;
     this.camera.position.y = -this.currentY;
     this.camera.position.z = this.currentZ;
+    this.camera.rotation.y = this.currentX * 0.08
+    this.camera.rotation.x = this.currentY * 0.05
     this.camera.lookAt(0, 0, 0);
 
     this.activeMode?.update(face);

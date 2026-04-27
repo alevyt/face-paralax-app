@@ -63,3 +63,28 @@ pre {
   opacity: 0.88;
   background: #000;
 }
+
+.debug-only {
+  display: none;
+}
+
+#app.debug-enabled .debug-only {
+  display: block;
+}
+
+.camera-preview.debug-only {
+  display: none;
+}
+
+#app.debug-enabled .camera-preview.debug-only {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 2;
+}
